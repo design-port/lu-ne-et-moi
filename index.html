@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Lune et moi | 木の布ライナー・神具コレクション</title>
+    <meta name="description" content="触れるたび、私に還る。森の呼吸をまとう「木の布」ライナー。女性の聖域を包む、循環の温もりをお届けします。">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Zen+Old+Mincho:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            base: '#F9F6F2',      /* 背景：非常に淡い生成り */
+                            main: '#E6DBD3',      /* メイン：温かみのあるグレージュ */
+                            accent: '#D4A3A3',    /* アクセント：くすみピンク */
+                            text: '#352B25',      /* テキスト：視認性を高めた深い焦げ茶（変更点） */
+                            gold: '#C5A065',      /* 金色：控えめなゴールド */
+                            dark: '#3D332F'       /* 引き締め色 */
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Zen Old Mincho"', 'serif'],
+                        serif: ['"Zen Old Mincho"', 'serif'],
+                        en: ['"Cormorant Garamond"', 'serif'],
+                    },
+                    letterSpacing: {
+                        widest: '.15em',
+                        jwide: '.08em',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 1.5s ease-out forwards',
+                        'fade-up': 'fadeUp 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        fadeUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 基本設定 */
+        body {
+            font-feature-settings: "palt";
+            -webkit-font-smoothing: antialiased;
+            color: #352B25; /* テキスト色変更 */
+            background-color: #F9F6F2;
+            margin: 0;
+        }
+        
+        /* 縦書き用ユーティリティ */
+        .writing-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            letter-spacing: 0.15em;
+        }
+
+        /* スクロールバー非表示（高級感） */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D4A3A3;
+            border-radius: 2px;
+        }
+
+        /* 画像パララックス効果用 */
+        .parallax-bg {
+            background-attachment: fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+        @media (max-width: 768px) {
+            .parallax-bg {
+                background-attachment: scroll; /* モバイルは無効化 */
+            }
+        }
+
+        /* フェードインアニメーションの初期状態 */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* テキスト選択色 */
+        ::selection {
+            background: #D4A3A3;
+            color: #fff;
+        }
+
+        /* 文字の視認性を高める光彩エフェクト */
+        .text-glow {
+            text-shadow: 0 0 20px rgba(249, 246, 242, 0.9), 0 0 8px rgba(249, 246, 242, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        /* ----------------------------------------------------------------
+           Components
+        ---------------------------------------------------------------- */
+
+        // セクション見出し（英語＋日本語）
+        const SectionTitle = ({ en, ja, className = "" }) => (
+            <div className={`text-center mb-16 md:mb-24 ${className}`}>
+                <h2 className="text-3xl md:text-5xl font-en italic text-brand-gold mb-3 tracking-widest">{en}</h2>
+                <p className="text-xs md:text-sm font-serif tracking-jwide opacity-70">{ja}</p>
+                <div className="w-[1px] h-12 bg-brand-accent/30 mx-auto mt-6"></div>
+            </div>
+        );
+
+        // ボタンコンポーネント
+        const Button = ({ children, href, primary = true }) => (
+            <a href={href} 
+               className={`
+                   inline-block px-10 py-4 text-sm tracking-widest transition-all duration-500 ease-out relative overflow-hidden group
+                   ${primary 
+                     ? 'bg-brand-text text-brand-base border border-brand-text hover:text-brand-text' 
+                     : 'bg-transparent text-brand-text border border-brand-text hover:bg-brand-text hover:text-brand-base'}
+               `}
+            >
+                <span className={`
+                    absolute inset-0 w-full h-full transform transition-transform duration-500 ease-out origin-left
+                    ${primary ? 'bg-brand-base -translate-x-full group-hover:translate-x-0' : 'bg-brand-text -translate-x-full group-hover:translate-x-0'}
+                `}></span>
+                <span className="relative z-10 font-serif flex items-center justify-center gap-2">
+                    {children}
+                </span>
+            </a>
+        );
+
+        // アイコン: 花（装飾用）
+        const FlowerIcon = ({ className }) => (
+            <svg viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM12 22C10.9 22 10 21.1 10 20C10 18.9 10.9 18 12 18C13.1 18 14 18.9 14 20C14 21.1 13.1 22 12 22ZM6 12C6 10.9 5.1 10 4 10C2.9 10 2 10.9 2 12C2 13.1 2.9 14 4 14C5.1 14 6 13.1 6 12ZM22 12C22 13.1 21.1 14 20 14C18.9 14 18 13.1 18 12C18 10.9 18.9 10 20 10C21.1 10 22 10.9 22 12ZM16.2 16.2C15.4 17 15.4 18.3 16.2 19.1C17 19.9 18.3 19.9 19.1 19.1C19.9 18.3 19.9 17 19.1 16.2C18.3 15.4 17 15.4 16.2 16.2ZM4.9 4.9C4.1 5.7 4.1 7 4.9 7.8C5.7 8.6 7 8.6 7.8 7.8C8.6 7 8.6 5.7 7.8 4.9C7 4.1 5.7 4.1 4.9 4.9ZM19.1 4.9C18.3 4.1 17 4.1 16.2 4.9C15.4 5.7 15.4 7 16.2 7.8C17 8.6 18.3 8.6 19.1 7.8C19.9 7 19.9 5.7 19.1 4.9ZM7.8 19.1C8.6 18.3 8.6 17 7.8 16.2C7 15.4 5.7 15.4 4.9 16.2C4.1 17 4.1 18.3 4.9 19.1C5.7 19.9 7 19.9 7.8 19.1Z" opacity="0.3"/>
+            </svg>
+        );
+
+        /* ----------------------------------------------------------------
+           Main App
+        ---------------------------------------------------------------- */
+        const App = () => {
+            
+            // スクロール検知アニメーション
+            useEffect(() => {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                        }
+                    });
+                }, { threshold: 0.1 });
+
+                document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+                return () => observer.disconnect();
+            }, []);
+
+            return (
+                <div className="overflow-x-hidden w-full relative bg-brand-base">
+                    
+                    {/* Header / Nav */}
+                    <header className="fixed w-full top-0 left-0 z-50 transition-all duration-300 py-6 mix-blend-multiply">
+                        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                            <h1 className="text-xl md:text-2xl font-en text-brand-text tracking-widest z-50 cursor-pointer">
+                                La Lune et moi
+                            </h1>
+                            <nav className="hidden md:flex gap-8 text-xs font-en tracking-widest text-brand-text/80">
+                                <a href="#story" className="hover:text-brand-accent transition-colors">STORY</a>
+                                <a href="#products" className="hover:text-brand-accent transition-colors">PRODUCTS</a>
+                                <a href="#philosophy" className="hover:text-brand-accent transition-colors">PHILOSOPHY</a>
+                            </nav>
+                        </div>
+                    </header>
+
+                    {/* Hero Section */}
+                    <section className="relative h-screen min-h-[700px] flex items-center justify-center overflow-hidden">
+                        {/* 背景画像 */}
+                        <div className="absolute inset-0 z-0">
+                            {/* REPLACE: 背景画像をブランドの世界観に合うものに変更してください */}
+                            <img 
+                                src="https://raw.githubusercontent.com/asuka-sketch/la-lune-et-moi/main/assets/top.webp" 
+                                alt="Forest Light" 
+                                className="w-full h-full object-cover opacity-90 scale-105 animate-float"
+                                style={{ animationDuration: '20s' }}
+                            />
+                            <div className="absolute inset-0 bg-brand-base/30 mix-blend-overlay"></div>
+                            <div className="absolute inset-0 bg-gradient-to-b from-brand-base/10 via-transparent to-brand-base"></div>
+                        </div>
+
+                        {/* メインコピーエリア */}
+                        <div className="relative z-10 max-w-4xl mx-auto px-6 text-center pt-20">
+                            <div className="inline-block mb-6 animate-fade-in opacity-0">
+                                <span className="block w-[1px] h-20 bg-brand-text/40 mx-auto mb-6"></span>
+                                <p className="text-sm md:text-base font-en text-brand-gold tracking-[0.3em] uppercase mb-4 text-glow">
+                                    La Lune et moi Collection
+                                </p>
+                            </div>
+                            
+                            <h2 className="text-3xl md:text-5xl lg:text-6xl font-serif leading-relaxed tracking-jwide text-brand-text mb-8 opacity-0 animate-fade-up text-glow" style={{ animationDelay: '0.3s' }}>
+                                触れるたび、私に還る。<br />
+                                <span className="text-2xl md:text-4xl lg:text-5xl block mt-4">森の呼吸をまとう「木の布」ライナー</span>
+                            </h2>
+
+                            <p className="text-sm md:text-base leading-loose font-serif opacity-80 mb-12 animate-fade-up opacity-0 text-glow" style={{ animationDelay: '0.6s' }}>
+                                女性の聖域を包む、循環の温もり。<br className="md:hidden"/>
+                                木から生まれた、奇跡の布。
+                            </p>
+                            
+                            <div className="animate-fade-up opacity-0" style={{ animationDelay: '0.9s' }}>
+                                <Button href="#products">森の温もりを手にする</Button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Concept Section */}
+                    <section className="py-24 md:py-32 px-6 bg-brand-base relative">
+                        <div className="max-w-4xl mx-auto relative z-10">
+                            <div className="flex flex-col md:flex-row items-center gap-12 md:gap-20">
+                                <div className="md:w-1/2 reveal-on-scroll">
+                                    <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-xl">
+                                        {/* REPLACE: 木の布のアップ画像や、生成りの布地の画像に差し替え */}
+                                        <img 
+                                            src="https://raw.githubusercontent.com/asuka-sketch/la-lune-et-moi/main/assets/cotton.webp" 
+                                            alt="Cotton Texture" 
+                                            className="w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
+                                        />
+                                        <div className="absolute inset-0 border border-white/20 m-4 pointer-events-none"></div>
+                                    </div>
+                                </div>
+                                <div className="md:w-1/2 reveal-on-scroll">
+                                    <h3 className="text-2xl md:text-3xl font-serif mb-8 text-brand-dark">
+                                        「木の布」って、なに？
+                                    </h3>
+                                    <p className="text-sm md:text-base leading-loose font-serif text-brand-text/90 mb-6 text-justify">
+                                        木から布が生まれるなんて、最初は私も驚きました。<br/>
+                                        けれど、その布に触れた瞬間、理屈を超えた「懐かしさ」が胸に広がったのです。
+                                    </p>
+                                    <p className="text-sm md:text-base leading-loose font-serif text-brand-text/90 mb-8 text-justify">
+                                        まるで、掌（てのひら）で森に触れているような感覚。<br/>
+                                        都会の喧騒の中で乾いていた心が、じわりと潤っていく。<br/>
+                                        それは、私がずっと求めていた「圧倒的な安心感」でした。
+                                    </p>
+                                    <p className="font-en text-2xl text-brand-gold italic">The breath of the forest.</p>
+                                </div>
+                            </div>
+                        </div>
+                        {/* 背景装飾 */}
+                        <div className="absolute top-10 left-0 w-64 h-64 bg-brand-accent/5 rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-10 right-0 w-96 h-96 bg-brand-gold/5 rounded-full blur-3xl"></div>
+                    </section>
+
+                    {/* Story Section (縦書きレイアウト) */}
+                    <section id="story" className="py-24 md:py-40 bg-[#F5F2ED] relative overflow-hidden">
+                        <div className="max-w-6xl mx-auto px-6 relative z-10">
+                            <SectionTitle en="My Story" ja="自分への回帰" />
+
+                            <div className="flex flex-col-reverse md:flex-row justify-center gap-8 md:gap-24">
+                                {/* 画像エリア */}
+                                <div className="w-full md:w-5/12 reveal-on-scroll relative">
+                                    <div className="aspect-[4/5] bg-white p-3 shadow-lg rotate-1">
+                                        {/* REPLACE: 森の中のポートレートや、自然を感じる写真に差し替え */}
+                                        <img 
+                                            src="https://raw.githubusercontent.com/asuka-sketch/la-lune-et-moi/main/assets/saya.webp" 
+                                            alt="Nature and Me" 
+                                            className="w-full h-full object-cover grayscale-[0.2]"
+                                        />
+                                    </div>
+                                    <div className="absolute -bottom-10 -left-10 w-40 h-40 border border-brand-text/10 rounded-full flex items-center justify-center bg-white/50 backdrop-blur-sm shadow-sm md:flex hidden">
+                                        <span className="font-en text-xs tracking-widest text-center leading-relaxed">
+                                            Return<br/>to<br/>Myself
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* テキストエリア（縦書き） */}
+                                <div className="w-full md:w-5/12 h-[500px] md:h-auto overflow-x-auto md:overflow-visible py-4 reveal-on-scroll">
+                                    <div className="writing-vertical text-sm md:text-base leading-loose font-serif h-full mx-auto md:mx-0 tracking-widest text-brand-dark/90">
+                                        <p className="mb-8">
+                                            ずっと、外側の世界に答えを求めていました。<br/>
+                                            都会へ行けば、何かが変わると信じて。
+                                        </p>
+                                        <p className="mb-8">
+                                            けれど、心は満たされるどころか<br/>
+                                            どんどん渇いていくばかり。<br/>
+                                            そんな時、私を救ってくれたのは「山」でした。
+                                        </p>
+                                        <p className="mb-8">
+                                            森に入ると、身体の曇りがスッと消えていく。<br/>
+                                            「あぁ、私に戻った」<br/>
+                                            その感覚が、すべての始まりでした。
+                                        </p>
+                                        <p>
+                                            木の布は、その時の森のエネルギーそのもの。<br/>
+                                            これはただの商品ではありません。<br/>
+                                            私自身を癒やし、本来の私へと還るための<br/>
+                                            「神具」なのです。
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Philosophy Section */}
+                    <section id="philosophy" className="py-24 md:py-32 px-6 bg-brand-base">
+                        <div className="max-w-5xl mx-auto">
+                             <SectionTitle en="Philosophy" ja="森と人の循環" />
+                             
+                             <div className="grid md:grid-cols-2 gap-12 items-center reveal-on-scroll">
+                                <div className="order-2 md:order-1 space-y-8 text-justify">
+                                    <h3 className="text-2xl font-serif text-brand-dark">
+                                        忘れられた森に、光を当てる。
+                                    </h3>
+                                    <p className="text-sm leading-8 font-serif opacity-80">
+                                        日本の山の多くは、人の手が入らなくなった人工林です。<br/>
+                                        陽が差し込まず、呼吸ができなくなった森。<br/>
+                                        そんな「間伐材」を救い、森を循環させたいという、和紙の布社長の情熱からこの布は生まれました。
+                                    </p>
+                                    <p className="text-sm leading-8 font-serif opacity-80">
+                                        木から糸を紡ぎ、布を織る。<br/>
+                                        それは採算度外視の、奇跡のような技術。<br/>
+                                        このライナーを使うことは、あなたの身体を温めると同時に、<br/>
+                                        日本の森を守り、未来へ繋ぐことにもなるのです。
+                                    </p>
+                                </div>
+                                <div className="order-1 md:order-2">
+                                    <div className="aspect-square rounded-full overflow-hidden border-8 border-white shadow-2xl relative">
+                                        {/* REPLACE: 森や木漏れ日のイメージ画像 */}
+                                        <img 
+                                            src="https://images.unsplash.com/photo-1473448912268-2022ce9509d8?q=80&w=1200&auto=format&fit=crop" 
+                                            alt="Forest Sun" 
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-brand-gold/10 mix-blend-screen"></div>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    </section>
+
+                    {/* Products Section */}
+                    <section id="products" className="py-24 md:py-32 px-6 bg-[#fffcf8]">
+                        <div className="max-w-6xl mx-auto">
+                            <SectionTitle en="Collection" ja="女性の聖域を守る、神具として" />
+
+                            {/* 木の布ワッフルの特性 */}
+                            <p className="text-sm md:text-base font-serif text-center mb-12 max-w-3xl mx-auto leading-loose opacity-80 reveal-on-scroll">
+                                速乾性・保温性・抗菌性に加え、<br/>
+                                ワッフル織りならではの凹凸が空気を含んでムレにくく、<br/>
+                                一日中さらりとした心地よさを保ってくれます。
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                {/* Product 1 */}
+                                <div className="group reveal-on-scroll">
+                                    <div className="aspect-[4/5] overflow-hidden bg-brand-base relative mb-6 cursor-pointer">
+                                        <div className="absolute inset-0 bg-brand-dark/0 group-hover:bg-brand-dark/5 transition-colors duration-500 z-10"></div>
+                                        {/* REPLACE: まんまる木の布ライナーの画像 */}
+                                        <img 
+                                            src="https://raw.githubusercontent.com/asuka-sketch/la-lune-et-moi/main/assets/manmaru.webp" 
+                                            alt="まんまる木の布ライナー" 
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        />
+                                        <div className="absolute bottom-4 left-4 z-20">
+                                            <span className="bg-white/90 px-3 py-1 text-xs font-serif tracking-widest">人気No.1</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <h3 className="text-lg font-serif mb-2">まん丸"木の布ライナー"</h3>
+                                        <p className="text-xs text-brand-text/60 mb-3 tracking-widest">Waffle Texture</p>
+                                        <p className="text-sm font-serif opacity-80 leading-relaxed mb-4 text-center">
+                                            2枚仕立ての、薄めで軽やかな<br/>
+                                            丸型パンティライナー。<br/>
+                                            洗って繰り返し使って頂けます。<br/><br/>
+                                            布ナプキンがはじめての方にも、<br/>
+                                            気軽に「まずはここから」<br/>
+                                            そんな気持ちで手に取っていただきたい一枚。
+                                        </p>
+                                        <p className="text-base font-en text-brand-dark mb-4">¥1,210 税込</p>
+                                    </div>
+                                </div>
+
+                                {/* Product 2 */}
+                                <div className="group reveal-on-scroll" style={{ transitionDelay: '0.1s' }}>
+                                    <div className="aspect-[4/5] overflow-hidden bg-brand-base relative mb-6 cursor-pointer">
+                                        <div className="absolute inset-0 bg-brand-dark/0 group-hover:bg-brand-dark/5 transition-colors duration-500 z-10"></div>
+                                        {/* REPLACE: ポケット付きひし形ライナーの画像 */}
+                                        <img 
+                                            src="https://raw.githubusercontent.com/asuka-sketch/la-lune-et-moi/main/assets/hishigata.webp" 
+                                            alt="ポケット付きライナー" 
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        />
+                                        <div className="absolute bottom-4 left-4 z-20">
+                                            <span className="bg-white/90 px-3 py-1 text-xs font-serif tracking-widest">カイロ付き</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <h3 className="text-lg font-serif mb-2">ポケット付きひし形"木の布ライナー"</h3>
+                                        <p className="text-xs text-brand-text/60 mb-3 tracking-widest">With Pocket</p>
+                                        <p className="text-sm font-serif opacity-80 leading-relaxed mb-4 text-center">
+                                            ポケットにミニカイロを入れることで、<br/>
+                                            デリケートゾーンをじんわり、<br/>
+                                            やさしく温めることができます。<br/><br/>
+                                            鼠径部まわりが温まることで血流が促され、<br/>
+                                            冷えが気になる方や、<br/>
+                                            生理痛のケア、妊活にも◎
+                                        </p>
+                                        <p className="text-base font-en text-brand-dark mb-4">¥1,980 税込</p>
+                                    </div>
+                                </div>
+
+                                {/* Product 3 */}
+                                <div className="group reveal-on-scroll" style={{ transitionDelay: '0.2s' }}>
+                                    <div className="aspect-[4/5] overflow-hidden bg-brand-base relative mb-6 cursor-pointer">
+                                        <div className="absolute inset-0 bg-brand-dark/0 group-hover:bg-brand-dark/5 transition-colors duration-500 z-10"></div>
+                                        {/* REPLACE: ハンカチの画像 */}
+                                        <img 
+                                            src="https://raw.githubusercontent.com/asuka-sketch/la-lune-et-moi/main/assets/minitaoru.webp" 
+                                            alt="木の布ミニタオルハンカチ" 
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        />
+                                        <div className="text-center">
+                                            <h3 className="text-lg font-serif mb-2">木の布ミニタオルハンカチ</h3>
+                                            <p className="text-xs text-brand-text/60 mb-3 tracking-widest">Triple Gauze</p>
+                                            <p className="text-sm font-serif opacity-80 leading-relaxed mb-4">
+                                                贅沢なトリプルガーゼ仕様。<br/>
+                                                お股に当てて使う裏技も。<br/>
+                                                いつでも森を持ち歩く感覚。
+                                            </p>
+                                            <p className="text-base font-en text-brand-dark mb-4">¥0,000</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="text-center mt-16 reveal-on-scroll">
+                                <Button href="https://luneetmoi.stores.jp/?category_id=698ac02b9391c40f24f13ea0&utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcAP3uNRleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafd-xOrd8s5b8ltrRc9Y8dNYz9PUo99lXowPQPL4cEY_HAjyviEQEs2qm77Hw_aem_pigdg8LwnTMehdYViVq_2Q">オンラインストアを見る</Button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Message Section */}
+                    <section className="py-24 px-6 bg-[#E6DBD3] bg-opacity-30 relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-10 pointer-events-none">
+                             <svg width="100%" height="100%">
+                                <pattern id="pattern-circles" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                                    <circle cx="20" cy="20" r="1" fill="#594A42"/>
+                                </pattern>
+                                <rect x="0" y="0" width="100%" height="100%" fill="url(#pattern-circles)" />
+                            </svg>
+                        </div>
+
+                        <div className="max-w-3xl mx-auto text-center relative z-10 reveal-on-scroll">
+                            <FlowerIcon className="w-12 h-12 mx-auto mb-8 text-brand-accent opacity-50" />
+                            <h3 className="text-2xl md:text-3xl font-serif mb-10 leading-relaxed">
+                                あなたも、自然の一部だから。
+                            </h3>
+                            <p className="text-sm md:text-base leading-loose font-serif text-brand-text/80 mb-10">
+                                木の布に触れることで、<br/>
+                                女性が本来の敏感な感覚を取り戻していく。<br/>
+                                それは、自然や宇宙と繋がり、<br/>
+                                無限の受け取り力を開花していくということ。
+                            </p>
+                            <p className="text-sm md:text-base leading-loose font-serif text-brand-text/80 mb-12">
+                                これは私からのギフトであり、<br/>
+                                すべての女性への祈りです。
+                            </p>
+                            <div className="font-en text-3xl text-brand-gold italic">La Lune et moi</div>
+                        </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer className="bg-brand-dark text-brand-base py-16 px-6">
+                        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+                            <div className="text-center md:text-left">
+                                <h2 className="text-2xl font-en tracking-widest mb-4">La Lune et moi</h2>
+                                <p className="text-xs font-serif opacity-60">木の布パンティライナー・神具コレクション</p>
+                            </div>
+                            
+                            <div className="flex gap-8 text-xs font-en tracking-widest opacity-80">
+                                <a href="https://www.instagram.com/saya_selflove_tukiwata/reels/" className="hover:text-brand-accent transition-colors">Instagram</a>
+                                <a href="https://luneetmoi.stores.jp/?category_id=698ac02b9391c40f24f13ea0&utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcAP3uNRleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafd-xOrd8s5b8ltrRc9Y8dNYz9PUo99lXowPQPL4cEY_HAjyviEQEs2qm77Hw_aem_pigdg8LwnTMehdYViVq_2Q" className="hover:text-brand-accent transition-colors">STORE</a>
+                            </div>
+                        </div>
+                        <div className="max-w-6xl mx-auto mt-12 pt-8 border-t border-white/10 text-center md:text-left">
+                            <p className="text-[10px] font-en tracking-widest opacity-40">
+                                &copy; {new Date().getFullYear()} La Lune et moi. All Rights Reserved.
+                            </p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
